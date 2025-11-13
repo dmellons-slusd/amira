@@ -109,13 +109,17 @@ def main():
         errors='coerce', 
         format='mixed' 
     )
+    IUI = config('AUTOMATION_USER_ID', default=10837)
+    IUN = config('AUTOMATION_USERNAME', default='Automation')
     with cnxn.connect() as connection:
         for key, row in data.iterrows():
             if isna(row['Assessment Date']): continue
             params = {
                 'TA':'BOY25',
                 'ID':'Amira',
-                'SQ':None
+                'SQ':None,
+                'IUI':IUI,
+                'IUN':IUN,
                 }
             params['PID'] = row['Student Alt ID'] # Aeries Student ID
             # params['TD'] = datetime.strptime(row['Assessment Date'], '%Y-%m-%d %H:%M:%S')
