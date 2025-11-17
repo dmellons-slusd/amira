@@ -7,7 +7,7 @@ from icecream import ic
 
 
 import_file = 'Amira to Aeries Import - 1000043973-ASSESSMENTS-2025_2026.csv'
-cnxn = aeries.get_aeries_cnxn() if config('ENVIRONMENT', default=None) == 'PROD' else aeries.get_aeries_cnxn(database=config('TEST_DATABASE', default='DST25000SLUSD_DAILY'), access_level='w')
+cnxn = aeries.get_aeries_cnxn(access_level='w') if config('ENVIRONMENT', default=None) == 'PROD' else aeries.get_aeries_cnxn(database=config('TEST_DATABASE', default='DST25000SLUSD_DAILY'), access_level='w')
 sql = core.build_sql_object()
 grade_filter = 'Second Grade'  # Grade Level for filter. Set to None to disable
 
@@ -126,13 +126,14 @@ def main():
             params['TD'] = row['Assessment Date'].strftime('%Y-%m-%d %H:%M:%S')
             if isna(params['TD'] or params['TD'] == ''): continue
             
-            params['TY'] = language_translation[row['Language']]
+            # params['TY'] = language_translation[row['Language']]
 
             params['GR'] = grade_translation[row['Grade']]
             params['SCL'] = school_translation[row['School']]
             params['DT'] = row['Assessment Date'].strftime('%m%y')          
             
             for test in column_mapping.keys():
+                if test != 'Overall ARM': continue
                 # set sequence number
                 params['SQ'] = params['SQ'] + 1 if params['SQ'] != None else get_next_TST_sq(params['PID'], cnxn)
                 
@@ -142,14 +143,16 @@ def main():
                 pl_key = column_mapping[test]['PL']
                 
                 # set test-specific params
-                params['PT'] = column_mapping[test]['PT']
+                # params['PT'] = column_mapping[test]['PT']
+                lang = language_translation[row['Language']] 
+                params['PT'] = 1 if lang == 'EN' else 2
                 params['PC'] = float(row[pc_key]) if pc_key != '' else 0
                 params['PL'] = float(row[pl_key]) if pl_key != '' else 0
                 params['GE'] = int(round(float(row[ge_key]), 1) * 10) if ge_key != '' and not isna(row[ge_key]) else 0
                 
                 # Replace empty strings with 0
                 params = {key: 0 if isna(value) else value for key, value in params.items()}  # Replace empty strings with 0
-                
+                # print(params)
                 connection.execute(
                     text(sql.INSERT_TST),
                     params
